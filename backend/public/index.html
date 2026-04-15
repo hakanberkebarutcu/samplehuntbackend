@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Şarkı Bul</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    h1 { margin-bottom: 30px; font-size: 2.5rem; text-shadow: 0 0 20px rgba(255,255,255,0.3); }
+    .player-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 30px;
+      width: 90%;
+      max-width: 600px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    #video-container { display: none; margin: 20px 0; }
+    #video-container iframe { width: 100%; height: 350px; border-radius: 12px; }
+    .info { margin: 15px 0; font-size: 1.1rem; }
+    .genre-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 5px 15px;
+      border-radius: 20px;
+      margin: 5px;
+      font-size: 0.9rem;
+    }
+    .stats { color: #aaa; font-size: 0.9rem; margin-top: 10px; }
+    #find-btn {
+      background: linear-gradient(135deg, #e94560, #ff6b6b);
+      color: white;
+      border: none;
+      padding: 15px 50px;
+      font-size: 1.2rem;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 20px;
+    }
+    #find-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(233,69,96,0.5); }
+    #find-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Şarkı Bul 🎵</h1>
+  <div class="player-card">
+    <div id="video-container"></div>
+    <div id="track-info">
+      <p style="color: #888;">YouTube'dan çekilen nadir şarkılardan birini keşfet!</p>
+    </div>
+    <button id="find-btn" onclick="findRandomTrack()">Şarkı Bul</button>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3001';
+
+    async function findRandomTrack() {
+      const btn = document.getElementById('find-btn');
+      const info = document.getElementById('track-info');
+      const container = document.getElementById('video-container');
+
+      btn.disabled = true;
+      btn.textContent = '🔄 Aranıyor...';
+
+      try {
+        const res = await fetch(`${API_URL}/api/tracks/random`);
+        const data = await res.json();
+
+        if (!data.data) {
+          info.innerHTML = '<p>Şarkı bulunamadı. Önce scraper çalıştırın!</p>';
+          return;
+        }
+
+        const track = data.data;
+        container.innerHTML = `<iframe src="https://www.youtube.com/embed/${track.videoId}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+        container.style.display = 'block';
+
+        const genres = typeof track.genre === 'string' ? JSON.parse(track.genre) : (track.genre || []);
+        info.innerHTML = `
+          <div class="info"><strong>${track.title}</strong></div>
+          <div class="info">${track.artist || track.channelName || 'Bilinmeyen Sanatçı'}</div>
+          <div>${genres.map(g => `<span class="genre-tag">${g}</span>`).join('')}</div>
+          <div class="stats">${track.country || ''} • ${track.viewCount?.toLocaleString() || 0} görüntülenme • ${track.bpm || '?'} BPM • ${track.key || '?'}</div>
+        `;
+      } catch (e) {
+        info.innerHTML = '<p style="color:#e94560;">Sunucuya bağlanılamadı. Backend çalışıyor mu?</p>';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Şarkı Bul';
+    }
+  </script>
+</body>
+</html>
