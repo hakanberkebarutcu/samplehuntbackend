@@ -100,6 +100,25 @@ class YouTubeSamplerScraper:
             print(f"  🤖 AI kanal filtrelendi: {channel}")
             return False
 
+        # ── Podcast filtresi ─────────────────────────────────────────────
+        channel_lower = channel.lower()
+        if "podcast" in channel_lower or "podcast" in title_lower:
+            print(f"  🎙️ Podcast filtrelendi: {video_info['title'][:50]}...")
+            return False
+
+        # ── Vibe filtresi ────────────────────────────────────────────────
+        if "vibe" in title_lower or "vibes" in title_lower:
+            print(f"  🌊 Vibe içerik filtrelendi: {video_info['title'][:50]}...")
+            return False
+
+        # ── Uzun isim filtresi (gereksiz karakterler) ─────────────────────
+        if len(video_info["title"]) > 100:
+            print(f"  📏 Çok uzun başlık filtrelendi: {video_info['title'][:50]}...")
+            return False
+
+        # ── Topic kanal önceliği ──────────────────────────────────────────
+        is_topic_channel = "topic" in channel_lower
+
         # ── Başlık/exclude keyword filtresi ──────────────────────────────
         for exclude in EXCLUDE_KEYWORDS:
             if exclude.lower() in title_lower:
@@ -134,7 +153,7 @@ class YouTubeSamplerScraper:
 
         data = {
             "video_id": video_id,
-            "title": stats["title"],
+            "title": f"{channel} - {stats['title']}",
             "url": f"https://www.youtube.com/watch?v={video_id}",
             "bpm": None,
             "key": None,
@@ -167,11 +186,20 @@ class YouTubeSamplerScraper:
                 videos = self.search_videos(keyword, MAX_RESULTS_PER_KEYWORD, published_after)
                 print(f"   Bulunan: {len(videos)} video")
 
-                for video in videos:
+                # Topic kanalları önce işle (öncelik sırası)
+                topic_videos = [v for v in videos if "topic" in v["channel"].lower()]
+                other_videos = [v for v in videos if "topic" not in v["channel"].lower()]
+                ordered_videos = topic_videos + other_videos
+
+                for video in ordered_videos:
                     if video["video_id"] in processed_cache:
                         print(f"  ⏭️  Bu seansda işlendi: {video['video_id']}")
                         continue
                     processed_cache.add(video["video_id"])
+
+                    is_topic = "topic" in video["channel"].lower()
+                    if is_topic:
+                        print(f"  ⭐ Topic kanal önceliği: {video['channel']}")
 
                     total_processed += 1
                     result = self.process_video(video, search_keyword=keyword)  # ← keyword geçiliyor
