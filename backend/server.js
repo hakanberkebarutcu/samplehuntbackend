@@ -5,7 +5,7 @@ const path = require("path");
 const { Pool } = require("pg");
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Country name mapping: frontend (Turkish) -> database (English)
 const COUNTRY_MAP = {
@@ -277,9 +277,9 @@ app.get("/api/health", async (req, res) => {
 // ── START ─────────────────────────────────────────────────────────────────────
 initDB();
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n🎵 SampleHunt Backend (releases)`);
-  console.log(`   http://localhost:${PORT}`);
+  console.log(`   Listening on port ${PORT}`);
   console.log(`   PostgreSQL: ✅`);
   console.log(`\n   📌 Endpointler:`);
   console.log(`      GET  /api/tracks/random - Rastgele track`);
